@@ -3,7 +3,8 @@ import express from 'express';
 import { authenticateJwt, SECRET } from "../middleware/";
 import { User } from "../db";
 import { signupInput } from "@100xdevs/common"
-
+import { PrismaClient } from '@prisma/client'      
+import { withAccelerate } from '@prisma/extension-accelerate'
 const router = express.Router();
 
 router.post('/signup', async (req, res) => {
@@ -15,6 +16,25 @@ router.post('/signup', async (req, res) => {
     }
     const username = parsedInput.data.username 
     const password = parsedInput.data.password 
+
+    const prisma = new PrismaClient().$extends(withAccelerate())
+
+    async function main() {
+      await prisma.user.create({
+        data:{
+          username,
+          password
+        }
+      })
+    }
+
+    main().then(async ()=>{
+      console.log("Data Added")
+      await prisma.$disconnect();
+    }).catch(async(error)=>{
+      console.log(error)
+      await prisma.$disconnect();
+    })
     
     const user = await User.findOne({ username: parsedInput.data.username });
     if (user) {
